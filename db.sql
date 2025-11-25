@@ -1,3 +1,5 @@
+-- Louvado seja o Senhor
+
 create database projetoJPS_DB;
 use projetoJPS_DB;
 

@@ -7,14 +7,14 @@ const mysql = require('mysql2');
 const path = require('path');
 const port = 8081;
 
-const conn = mysql.createConnection({
+const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: 'cimatec',
     database: 'projetoJPS_DB',
 });
 
-conn.connect(function(err){
+db.connect(function(err){
     if(err){
         console.error(`Connection error: ${err}`);
         return;
@@ -29,11 +29,13 @@ app.use(bodyParser.json())
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-app.post('/addProduto', (req, res) => {
-    const { nomeProduto, valorProduto, categoriaProduto } = req.body;
-        const sql = 'insert into produtos (prodNome, prodValor, prodCategoria) values (?, ?, ?)'
+// CRUD dos produtos
 
-    conn.query(sql, [nomeProduto, valorProduto, categoriaProduto], (err) => {
+app.post('/addProduto', (req, res) => {
+    const { prodNome, prodValor, prodCategoria } = req.body;
+    const query = 'insert into produtos (prodNome, prodValor, prodCategoria) values (?, ?, ?)'
+
+    db.query(query, [prodNome, prodValor, prodCategoria], (err) => {
         if(err){
             throw new Error(`Produto não foi adicionado: ${err}`);
         }
@@ -43,6 +45,34 @@ app.post('/addProduto', (req, res) => {
           message: 'Produto inserido com sucesso!'  
         })
     })
+});
+
+app.get('/showProdutos', (req, res) => {
+    const query = "select * from produtos order by prodNome";
+
+    db.query(query, (err, results) => {
+        if(err){
+            throw new Error(`Erro de consulta: ${err}`);
+        }
+
+        res.status(200).json({ produtos: results });
+    });
+});
+
+app.put('/updateProduto', (req, res) => {
+    const { prodID } = req.params;
+    const { prodNome, prodValor, prodCategoria } = req.body;
+
+    query = 'update produtos set prodNome = ?, prodValor = ?, prodCategoria = ? where prodID = ?';
+
+    db.query(query, [prodNome, prodValor, prodCategoria, prodID], (err) => {
+        if(err){
+            throw new Error(`Erro de atualização de dados: ${err}`);
+        }
+
+        console.log(results);
+        res.status(200).json({ message: 'Produto atualizado com sucesso!' })
+    });
 });
 
 app.listen(port, () => {
