@@ -60,8 +60,8 @@ app.get('/showProdutos', (req, res) => {
 });
 
 app.put('/updateProduto', (req, res) => {
-    const { prodID } = req.params;
-    const { prodNome, prodValor, prodCategoria } = req.body;
+    // const { prodID } = req.params;
+    const { prodID, prodNome, prodValor, prodCategoria } = req.body;
 
     query = 'update produtos set prodNome = ?, prodValor = ?, prodCategoria = ? where prodID = ?';
 
@@ -70,7 +70,7 @@ app.put('/updateProduto', (req, res) => {
             throw new Error(`Erro de atualização de dados: ${err}`);
         }
 
-        console.log(results);
+        console.log("Edição realizada!");
         res.status(200).json({ message: 'Produto atualizado com sucesso!' })
     });
 });
