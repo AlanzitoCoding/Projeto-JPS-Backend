@@ -79,7 +79,7 @@ app.delete('/deleteProduto/:prodID', (req, res) => {
 
     query = 'delete from produtos where prodID = ?';
 
-    db.query(sql, [prodID], (err) => {
+    db.query(query, [prodID], (err) => {
         if(err){
             throw new Error(`Exclusão mal sucedida: ${err}`);
         }
