@@ -60,7 +60,6 @@ app.get('/showProdutos', (req, res) => {
 });
 
 app.put('/updateProduto', (req, res) => {
-    // const { prodID } = req.params;
     const { prodID, prodNome, prodValor, prodCategoria } = req.body;
 
     query = 'update produtos set prodNome = ?, prodValor = ?, prodCategoria = ? where prodID = ?';
@@ -71,9 +70,24 @@ app.put('/updateProduto', (req, res) => {
         }
 
         console.log("Edição realizada!");
-        res.status(200).json({ message: 'Produto atualizado com sucesso!' })
+        res.status(200).json({ message: 'Produto atualizado com sucesso!' });
     });
 });
+
+app.delete('/deleteProduto/:prodID', (req, res) => {
+    const { prodID } = req.params;
+
+    query = 'delete from produtos where prodID = ?';
+
+    db.query(sql, [prodID], (err) => {
+        if(err){
+            throw new Error(`Exclusão mal sucedida: ${err}`);
+        }
+
+        console.log("Exclusão realizada!");
+        res.status(200).json({ message: 'Produto deletado com sucesso!' });
+    })
+})
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
