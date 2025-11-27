@@ -89,6 +89,25 @@ app.delete('/deleteProduto/:prodID', (req, res) => {
     })
 })
 
+// CRUD das vendas
+
+app.post('/addNewVenda', (req, res) => {
+    const { vendaDataRegistro, vendaValor, nomeComprador, tipoCompra } = req.body;
+
+    query = 'insert into vendas (vendaDataRegistro, vendaValor, nomeComprador, tipoCompra) values (?, ?, ?, ?)';
+
+    db.query(query, [vendaDataRegistro, vendaValor, nomeComprador, tipoCompra], (err) => {
+        if(err){
+            throw new Error(`Produto não foi adicionado: ${err}`);
+        }
+
+        res.json({
+          success: true,
+          message: 'Produto inserido com sucesso!'  
+        })
+    });
+});
+
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });

@@ -1,5 +1,3 @@
--- Louvado seja o Senhor
-
 create database projetoJPS_DB;
 use projetoJPS_DB;
 
@@ -11,4 +9,11 @@ create table produtos(
     Primary Key(prodID)
 );
 
-select * from produtos;
+create table vendas(
+	vendaID int not null auto_increment,
+	vendaDataRegistro Date not null,
+    vendaValor decimal(10, 2) not null,
+    nomeComprador varchar(255),
+    tipoCompra enum("credito", "debito", "dinheiro", "pix", "fiado") not null,
+    Primary Key(vendaID)
+);
