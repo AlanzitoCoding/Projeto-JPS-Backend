@@ -10,7 +10,7 @@ const port = 8081;
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: '2006Pa#*#',
+    password: '',
     database: 'projetoJPS_DB',
 });
 
@@ -109,7 +109,7 @@ app.post('/addNewVenda', (req, res) => {
 });
 
 app.get('/showVendas', (req, res) => {
-    query = 'select * from vendas where data';
+    query = 'select * from vendas where tipoCompra != "fiado" order by vendaDataRegistro desc';
 
     db.query(query, (err, results) => {
         if(err){
@@ -117,6 +117,18 @@ app.get('/showVendas', (req, res) => {
         }
 
         res.status(200).json({ vendas: results });
+    });
+});
+
+app.get('/showDividas', (req, res) => {
+    query = 'select * from vendas where tipoCompra = "fiado" order by vendaDataRegistro desc';
+
+    db.query(query, (err, results) => {
+        if(err){
+            throw new Error(`Erro na exibição dos produtos: ${err}`);
+        }
+
+        res.status(200).json({ dividas: results });
     });
 });
 

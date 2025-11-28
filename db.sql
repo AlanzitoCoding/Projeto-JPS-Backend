@@ -69,33 +69,74 @@ INSERT INTO vendas (vendaDataRegistro, vendaValor, nomeComprador, tipoCompra) VA
 ('2025-01-21', 640.00, 'Sofia Ribeiro', 'credito'),
 ('2025-01-22', 27.90, 'Gabriel Monteiro', 'dinheiro'),
 ('2025-01-23', 1500.00, 'Empresa XPTO', 'pix'),
-('2025-01-24', 65.30, 'Cliente Desconhecido', 'fiado');
+('2025-01-24', 65.30, 'Cliente Desconhecido', 'fiado'),
+(CurDate(), 100, "Jonah", "fiado");
 
-insert into vendas(vendaDataRegistro, vendaValor, nomeComprador, tipoCompra) values (CurDate(), 100, "Jonah", "fiado");
+insert into vendas(vendaDataRegistro, vendaValor, nomeComprador, tipoCompra) values (CurDate(), 150, "Jonah", "fiado");
 
+insert into pagamentoDividas(valorPagamento, dataPagamento, clienteID_FK) values (40, curdate(), 1);
+
+select * from produtos;
 select * from registroDividas;
+select * from clientes;
+select count(vendaValor), sum(vendaValor) from vendas where tipoCompra = 'dinheiro';
+
 truncate table vendas;
 
-drop trigger registroFiadoTrigger;
+drop trigger atualizacaoPagamentoDividaTrigger;
 
 delimiter $$
 create trigger registroFiadoTrigger 
 before insert
 on vendas
 for each row
-	begin
-    declare cliente_id int;
-		if new.tipoCompra = 'fiado' then
+begin
+	declare cliente_id int;
+	if new.tipoCompra = 'fiado' then
+		select clienteID into cliente_id from clientes where clienteNome = new.nomeComprador;
+		
+		if cliente_id is not null then
+			insert into registroDividas(valorDivida, dataDivida, clienteID_FK) values (new.vendaValor, new.vendaDataRegistro, cliente_id);
+		else
+			insert into clientes (clienteNome, clienteDivida) values (new.nomeComprador, 0);
 			select clienteID into cliente_id from clientes where clienteNome = new.nomeComprador;
-            
-			if cliente_id is not null then
-                insert into registroDividas(valorDivida, dataDivida, clienteID_FK) values (new.vendaValor, new.vendaDataRegistro, cliente_id);
-			else
-				insert into clientes (clienteNome, clienteDivida) values (new.nomeComprador, 0);
-				select clienteID into cliente_id from clientes where clienteNome = new.nomeComprador;
-                insert into registroDividas(valorDivida, dataDivida, clienteID_FK) values (new.vendaValor, new.vendaDataRegistro, cliente_id);
-			end if;
+			insert into registroDividas(valorDivida, dataDivida, clienteID_FK) values (new.vendaValor, new.vendaDataRegistro, cliente_id);
 		end if;
-    end; 
-$$
-delimiter ;
+	end if;
+end; 
+$$ delimiter ;
+
+delimiter $$
+create trigger atualizacaoDividaTrigger
+before insert
+on registroDividas
+for each row
+begin
+	declare cliente_id int;
+	set cliente_id = new.clienteID_FK;
+	
+	update clientes set clienteDivida = clienteDivida + new.valorDivida where clienteID = cliente_id;
+end;
+$$ delimiter ;
+
+delimiter $$
+create trigger atualizacaoPagamentoDividaTrigger
+before insert
+on pagamentoDividas
+for each row
+begin
+	declare cliente_id int;
+    declare cliente_divida decimal(10, 2);
+    
+	set cliente_id = new.clienteID_FK;
+    
+    select clienteDivida into cliente_divida from clientes where clienteID = cliente_id;
+    set cliente_divida = cliente_divida - new.valorPagamento;
+    
+    if cliente_divida >= 0 then
+		update clientes set clienteDivida = cliente_divida where clienteID = cliente_id;
+	else
+		update clientes set clienteDivida = 0 where clienteID = cliente_id;
+	end if;
+end;
+$$ delimiter ;
