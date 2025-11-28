@@ -10,7 +10,7 @@ const port = 8081;
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: 'cimatec',
+    password: '2006Pa#*#',
     database: 'projetoJPS_DB',
 });
 
@@ -94,9 +94,9 @@ app.delete('/deleteProduto/:prodID', (req, res) => {
 app.post('/addNewVenda', (req, res) => {
     const { vendaDataRegistro, vendaValor, nomeComprador, tipoCompra } = req.body;
 
-    query = 'insert into vendas (vendaDataRegistro, vendaValor, nomeComprador, tipoCompra) values (?, ?, ?, ?)';
+    query = 'insert into vendas (nomeComprador, vendaValor, vendaDataRegistro, tipoCompra) values (?, ?, ?, ?)';
 
-    db.query(query, [vendaDataRegistro, vendaValor, nomeComprador, tipoCompra], (err) => {
+    db.query(query, [nomeComprador, vendaValor, vendaDataRegistro, tipoCompra], (err) => {
         if(err){
             throw new Error(`Produto não foi adicionado: ${err}`);
         }
@@ -105,6 +105,18 @@ app.post('/addNewVenda', (req, res) => {
           success: true,
           message: 'Produto inserido com sucesso!'  
         })
+    });
+});
+
+app.get('/showVendas', (req, res) => {
+    query = 'select * from vendas where data';
+
+    db.query(query, (err, results) => {
+        if(err){
+            throw new Error(`Erro na exibição dos produtos: ${err}`);
+        }
+
+        res.status(200).json({ vendas: results });
     });
 });
 
