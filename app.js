@@ -10,7 +10,7 @@ const port = 8081;
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: '',
+    password: '2006Pa#*#',
     database: 'projetoJPS_DB',
 });
 
@@ -131,6 +131,163 @@ app.get('/showDividas', (req, res) => {
         res.status(200).json({ dividas: results });
     });
 });
+
+app.put('/updateVenda/:vendaID', (req, res) => {
+    const { vendaID } = req.params;
+    const { vendaDataRegistro, vendaValor, nomeComprador, tipoCompra } = req.body;
+
+    query = 'update vendas set vendaDataRegistro = ?, vendaValor = ?, nomeComprador = ?, tipoCompra = ? where vendaID = ?';
+
+    db.query(query, [vendaDataRegistro, vendaValor, nomeComprador, tipoCompra, vendaID], (err) => {
+        if(err){
+            throw new Error(`Erro na atualização: ${err}`);
+        }
+
+        res.status(200).json({ message: 'Atualização efetuada' });
+    })
+})
+
+app.delete('/deleteVenda/:vendaID', (req, res) => {
+    const { vendaID } = req.params;
+
+    query = 'delete from vendas where vendaID = ?';
+
+    db.query(query, [vendaID], (err) => {
+        if(err){
+            throw new Error(`Erro na exclusão: ${err}`);
+        }
+
+        res.status(200).json({ message: 'Exclusão efetuada' });
+    })
+})
+
+// CRUD dos clientes
+
+app.get('/showClientes', (req, res) => {
+    query = 'select * from clientes';
+
+    db.query(query, (err, results) => {
+        if(err){
+            throw new Error(`Erro na consulta: ${err}`);
+        }
+
+        res.status(200).json({ clientes: results });
+    });
+});
+
+app.get('/showClienteInfo/:clienteID', (req, res) => {
+    const { clienteID } = req.params;
+
+    query = 'select * from clientes where clienteID = ?';
+
+    db.query(query, [clienteID], (err, results) => {
+        if(err){
+            throw new Error(`Erro na consulta: ${err}`);
+        }
+
+        res.status(200).json({ clienteInfo: results });
+    });
+})
+
+app.get('/showClienteRegistroDividas/:clienteID_FK', (req, res) => {
+    const { clienteID_FK } = req.params;
+
+    query = 'select * from registroDividas where clienteID_FK = ?';
+
+    db.query(query, [clienteID_FK], (err, results) => {
+        if(err){
+            throw new Error(`Erro na consulta: ${err}`);
+        }
+
+        res.status(200).json({ registroDividas: results });
+    });
+});
+
+app.get('/showClientePagamentoDividas/:clienteID_FK', (req, res) => {
+    const { clienteID_FK } = req.params;
+
+    query = 'select * from pagamentoDividas where clienteID_FK = ?';
+
+    db.query(query, [clienteID_FK], (err, results) => {
+        if(err){
+            throw new Error(`Erro na consulta: ${err}`);
+        }
+
+        res.status(200).json({ pagamentoDividas: results });
+    });
+});
+
+app.post('/pagarDivida', (req, res) => {
+    const { valorPagamento, clienteID_FK } = req.body;
+
+    query = 'insert into pagamentoDividas(valorPagamento, dataPagamento, clienteID_FK) values (?, curdate(), ?)';
+
+    db.query(query, [valorPagamento, clienteID_FK], (err) => {
+        if(err){
+            throw new Error(`Erro na criação do registro: ${err}`);
+        }
+
+        res.status(200).json({ message: 'Registro criado!' });
+    });
+});
+
+app.put('/updateRegistroDivida/:regDividaID/:clienteID_FK', (req, res) => {
+    const { regDividaID, clienteID_FK } = req.params;
+    const { valorDivida, dataDivida } = req.body;
+
+    query = 'update registroDividas set valorDivida = ?, dataDivida = ? where regDividasID = ? and clienteID_FK = ?';
+
+    db.query(query, [valorDivida, dataDivida, regDividaID, clienteID_FK], (err) => {
+        if(err){
+            throw new Error(`Erro de atualização: ${err}`);
+        }
+
+        res.status(200).json({ message: "Atualização efetuada!" });
+    })
+})
+
+app.put('/updatePagamentoDivida/:pagDividaID/:clienteID_FK', (req, res) => {
+    const { pagDividaID, clienteID_FK } = req.params;
+    const { valorPagamento, dataPagamento } = req.body;
+
+    query = 'update pagamentoDividas set valorPagamento = ?, dataPagamento = ? where pagDividasID = ? and clienteID_FK = ?';
+
+    db.query(query, [valorPagamento, dataPagamento, pagDividaID, clienteID_FK], (err) => {
+        if(err){
+            throw new Error(`Erro de atualização: ${err}`);
+        }
+
+        res.status(200).json({ message: "Atualização efetuada!" });
+    })
+})
+
+app.delete('/deleteRegistroDivida/:regDividasID/:clienteID_FK', (req, res) => {
+    const { regDividasID, clienteID_FK } = req.params;
+
+    query = 'delete from registroDividas where regDividasID = ? and clienteID_FK = ?';
+
+    db.query(query, [regDividasID, clienteID_FK], (err) => {
+        if(err){
+            throw new Error(`Erro na exclusão: ${err}`);
+        }
+
+        res.status(200).json({ message: 'Exclusão efetuada!' })
+    })
+})
+
+app.delete('/deletePagamentoDivida/:pagDividasID/:clienteID_FK', (req, res) => {
+    const { pagDividasID, clienteID_FK } = req.params;
+
+    query = 'delete from pagamentoDividas where pagDividasID = ? and clienteID_FK = ?';
+
+    db.query(query, [pagDividasID, clienteID_FK], (err) => {
+        if(err){
+            throw new Error(`Erro na exclusão: ${err}`);
+        }
+
+        res.status(200).json({ message: 'Exclusão efetuada!' })
+    })
+})
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);

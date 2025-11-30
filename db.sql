@@ -74,16 +74,17 @@ INSERT INTO vendas (vendaDataRegistro, vendaValor, nomeComprador, tipoCompra) VA
 
 insert into vendas(vendaDataRegistro, vendaValor, nomeComprador, tipoCompra) values (CurDate(), 150, "Jonah", "fiado");
 
-insert into pagamentoDividas(valorPagamento, dataPagamento, clienteID_FK) values (40, curdate(), 1);
+insert into pagamentoDividas(valorPagamento, dataPagamento, clienteID_FK) values (100, curdate(), 1);
+
+update pagamentoDividas set valorPagamento = 50 where clienteID_FK = 1 and pagDividasID = 2;
 
 select * from produtos;
 select * from registroDividas;
 select * from clientes;
+select * from pagamentoDividas;
 select count(vendaValor), sum(vendaValor) from vendas where tipoCompra = 'dinheiro';
 
 truncate table vendas;
-
-drop trigger atualizacaoPagamentoDividaTrigger;
 
 delimiter $$
 create trigger registroFiadoTrigger 
@@ -138,5 +139,43 @@ begin
 	else
 		update clientes set clienteDivida = 0 where clienteID = cliente_id;
 	end if;
+end;
+$$ delimiter ;
+
+delimiter $$
+create trigger alteracaoRegistroDividaTrigger
+before update 
+on registroDividas
+for each row
+begin
+	declare cliente_id int;
+    declare cliente_divida decimal(10, 2);
+    
+	set cliente_id = new.clienteID_FK;
+    
+    select clienteDivida into cliente_divida from clientes where clienteID = cliente_id;
+    set cliente_divida = cliente_divida - old.valorDivida;
+    set cliente_divida = cliente_divida + new.valorDivida;
+    
+    update clientes set clienteDivida = cliente_divida where clienteID = cliente_id;
+end;
+$$ delimiter ;
+
+delimiter $$
+create trigger alteracaoPagamentoDividaTrigger
+before update 
+on pagamentoDividas
+for each row
+begin
+	declare cliente_id int;
+    declare cliente_divida decimal(10, 2);
+    
+	set cliente_id = new.clienteID_FK;
+    
+    select clienteDivida into cliente_divida from clientes where clienteID = cliente_id;
+    set cliente_divida = cliente_divida + old.valorPagamento;
+    set cliente_divida = cliente_divida - new.valorPagamento;
+    
+    update clientes set clienteDivida = cliente_divida where clienteID = cliente_id;
 end;
 $$ delimiter ;
