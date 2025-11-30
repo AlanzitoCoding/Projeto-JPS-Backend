@@ -29,6 +29,28 @@ app.use(bodyParser.json())
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
+// Auth
+
+app.post('/login', (req, res) => {
+    const { userNome, userSenha } = req.body;
+
+    query = 'select * from usuarios where userNome = ? and userSenha = ? limit 1';
+
+    db.query(query, [userNome, userSenha], (err, results) => {
+        if(err){
+            throw new Error(`Erro de consulta: ${err}`);
+        }
+
+        if(results.length > 0){
+            console.log(results.affectedRows);
+            res.status(200).json({ usuario: results });
+        }
+        else{
+            res.status(401).json({ message: 'Usuário não encontrado' });
+        }
+    })
+})
+
 // CRUD dos produtos
 
 app.post('/addProduto', (req, res) => {
