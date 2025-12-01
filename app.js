@@ -120,7 +120,7 @@ app.post('/addNewVenda', (req, res) => {
 
     db.query(query, [nomeComprador, vendaValor, vendaDataRegistro, tipoCompra], (err) => {
         if(err){
-            throw new Error(`Produto não foi adicionado: ${err}`);
+            throw new Error(`Venda não foi adicionada: ${err}`);
         }
 
         res.json({

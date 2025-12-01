@@ -3,6 +3,17 @@
 create database projetoJPS_DB;
 use projetoJPS_DB;
 
+create table usuarios(
+	userID int not null auto_increment,
+    userNome varchar(255) not null,
+    userSenha varchar(255) not null,
+    userTipo enum("admin", "user") not null,
+    Primary Key(userID, userNome)
+);
+
+insert into usuarios(userNome, userSenha, userTipo) values ("JPSAdmin", "Jps290271@", "admin");
+select * from usuarios where userNome = "JPSAdmin" and userSenha = "Jps290271@" limit 1;
+
 create table produtos(
 	prodID int not null auto_increment,
     prodNome varchar(255) not null,
@@ -32,9 +43,11 @@ create table registroDividas(
     valorDivida decimal(10, 2) not null,
     dataDivida Date not null,
     clienteID_FK int not null,
+    vendaID_FK int not null,
     
     Primary Key(regDividasID),
-    Foreign Key(clienteID_FK) references clientes(clienteID)
+    Foreign Key(clienteID_FK) references clientes(clienteID),
+    Foreign Key(vendaID_FK) references vendas(vendaID)
 );
 
 create table pagamentoDividas(
@@ -82,13 +95,16 @@ select * from produtos;
 select * from registroDividas;
 select * from clientes;
 select * from pagamentoDividas;
+select * from vendas;
 select count(vendaValor), sum(vendaValor) from vendas where tipoCompra = 'dinheiro';
 
-truncate table vendas;
+select * from vendas where nomeComprador like "%j%" and tipoCompra = "fiado";
+
+-- Triggers da table vendas
 
 delimiter $$
 create trigger registroFiadoTrigger 
-before insert
+after insert
 on vendas
 for each row
 begin
@@ -97,15 +113,46 @@ begin
 		select clienteID into cliente_id from clientes where clienteNome = new.nomeComprador;
 		
 		if cliente_id is not null then
-			insert into registroDividas(valorDivida, dataDivida, clienteID_FK) values (new.vendaValor, new.vendaDataRegistro, cliente_id);
+			insert into registroDividas(valorDivida, dataDivida, clienteID_FK, vendaID_FK) 
+            values (new.vendaValor, new.vendaDataRegistro, cliente_id, new.vendaID);
 		else
 			insert into clientes (clienteNome, clienteDivida) values (new.nomeComprador, 0);
 			select clienteID into cliente_id from clientes where clienteNome = new.nomeComprador;
-			insert into registroDividas(valorDivida, dataDivida, clienteID_FK) values (new.vendaValor, new.vendaDataRegistro, cliente_id);
+			insert into registroDividas(valorDivida, dataDivida, clienteID_FK, vendaID_FK) 
+            values (new.vendaValor, new.vendaDataRegistro, cliente_id, new.vendaID);
 		end if;
 	end if;
 end; 
 $$ delimiter ;
+
+delimiter $$
+create trigger atualizacaoRegistroFiadoTrigger
+before update
+on vendas
+for each row
+begin
+	declare vendaid_fk int;
+    set vendaid_fk = new.vendaID;
+    
+    update registroDividas set valorDivida = new.vendaValor, dataDivida = new.vendaDataRegistro 
+    where vendaID_FK = vendaid_fk;
+end;
+$$ delimiter ;
+
+delimiter $$
+create trigger exclusaoRegistroFiadoTrigger
+before delete
+on vendas
+for each row
+begin
+	declare vendaid_fk int;
+    set vendaid_fk = old.vendaID;
+    
+    delete from registroDividas where vendaID_FK = vendaid_fk;
+end;
+$$ delimiter ;
+
+-- Triggers da table registroDividas
 
 delimiter $$
 create trigger atualizacaoDividaTrigger
@@ -119,6 +166,43 @@ begin
 	update clientes set clienteDivida = clienteDivida + new.valorDivida where clienteID = cliente_id;
 end;
 $$ delimiter ;
+
+delimiter $$
+create trigger alteracaoRegistroDividaTrigger
+before update 
+on registroDividas
+for each row
+begin
+	declare cliente_id int;
+    declare cliente_divida decimal(10, 2);
+    
+	set cliente_id = new.clienteID_FK;
+    
+    select clienteDivida into cliente_divida from clientes where clienteID = cliente_id;
+    set cliente_divida = cliente_divida - old.valorDivida;
+    set cliente_divida = cliente_divida + new.valorDivida;
+    
+    update clientes set clienteDivida = cliente_divida where clienteID = cliente_id;
+end;
+$$ delimiter ;
+
+delimiter $$
+create trigger exclusaoRegistroDividaTrigger
+before delete
+on registroDividas
+for each row
+begin
+	declare clienteid_fk int;
+    declare cliente_divida decimal(10, 2);
+    
+    set clienteid_fk = old.clienteID_FK;
+    select clienteDivida into cliente_divida from clientes where clienteID = clienteid_fk;
+    
+    update clientes set clienteDivida = cliente_divida - old.valorDivida where clienteID = clienteid_fk;
+end;
+$$ delimiter ;
+
+-- Triggers da table pagamentoDividas
 
 delimiter $$
 create trigger atualizacaoPagamentoDividaTrigger
@@ -143,25 +227,6 @@ end;
 $$ delimiter ;
 
 delimiter $$
-create trigger alteracaoRegistroDividaTrigger
-before update 
-on registroDividas
-for each row
-begin
-	declare cliente_id int;
-    declare cliente_divida decimal(10, 2);
-    
-	set cliente_id = new.clienteID_FK;
-    
-    select clienteDivida into cliente_divida from clientes where clienteID = cliente_id;
-    set cliente_divida = cliente_divida - old.valorDivida;
-    set cliente_divida = cliente_divida + new.valorDivida;
-    
-    update clientes set clienteDivida = cliente_divida where clienteID = cliente_id;
-end;
-$$ delimiter ;
-
-delimiter $$
 create trigger alteracaoPagamentoDividaTrigger
 before update 
 on pagamentoDividas
@@ -176,6 +241,26 @@ begin
     set cliente_divida = cliente_divida + old.valorPagamento;
     set cliente_divida = cliente_divida - new.valorPagamento;
     
-    update clientes set clienteDivida = cliente_divida where clienteID = cliente_id;
+    if cliente_divida >= 0 then
+		update clientes set clienteDivida = cliente_divida where clienteID = cliente_id;
+	else
+		update clientes set clienteDivida = 0 where clienteID = cliente_id;
+	end if;
+end;
+$$ delimiter ;
+
+delimiter $$
+create trigger exclusaoPagamentoDividaTrigger
+before delete
+on pagamentoDividas
+for each row
+begin
+	declare clienteid_fk int;
+    declare cliente_divida decimal(10, 2);
+    
+    set clienteid_fk = old.clienteID_FK;
+    select clienteDivida into cliente_divida from clientes where clienteID = clienteid_fk;
+    
+    update clientes set clienteDivida = cliente_divida + old.valorPagamento where clienteID = clienteid_fk;
 end;
 $$ delimiter ;
