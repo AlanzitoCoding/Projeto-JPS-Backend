@@ -10,7 +10,7 @@ const port = 8081;
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: '2006Pa#*#',
+    password: 'cimatec',
     database: 'projetoJPS_DB',
 });
 
@@ -24,6 +24,7 @@ db.connect(function(err){
 });
 
 const app = express();
+const dbPromise = db.promise();
 app.use(cors());
 app.use(bodyParser.json())
 app.use(express.json());
@@ -239,18 +240,33 @@ app.get('/showClientePagamentoDividas/:clienteID_FK', (req, res) => {
     });
 });
 
-app.post('/pagarDivida', (req, res) => {
-    const { valorPagamento, clienteID_FK } = req.body;
+app.post('/pagarDivida', async (req, res) => {
+    try {
+        const { valorPagamento, clienteID_FK } = req.body;
 
-    query = 'insert into pagamentoDividas(valorPagamento, dataPagamento, clienteID_FK) values (?, curdate(), ?)';
+        const [rows] = await dbPromise.query(
+            'select clienteDivida from clientes where clienteID = ?',
+            [clienteID_FK]
+        );
 
-    db.query(query, [valorPagamento, clienteID_FK], (err) => {
-        if(err){
-            throw new Error(`Erro na criação do registro: ${err}`);
+        const divida = rows[0].clienteDivida;
+
+        if(divida - valorPagamento >= 0){
+            await dbPromise.query(
+                'insert into pagamentoDividas(valorPagamento, dataPagamento, clienteID_FK) values (?, curdate(), ?)',
+                [valorPagamento, clienteID_FK]
+            );
+
+            res.status(200).json({ message: 'Registro criado!' });
+        } 
+        else{
+            res.status(400).json({ error: 'Valor do pagamento é maior que o da dívida' });
         }
-
-        res.status(200).json({ message: 'Registro criado!' });
-    });
+    } 
+    catch(error){
+        console.error(error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
 });
 
 app.put('/updateRegistroDivida/:regDividaID/:clienteID_FK', (req, res) => {

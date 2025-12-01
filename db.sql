@@ -98,6 +98,20 @@ select * from pagamentoDividas;
 select * from vendas;
 select count(vendaValor), sum(vendaValor) from vendas where tipoCompra = 'dinheiro';
 
+delete from vendas where vendaID > 0;
+delete from clientes where clienteID > 0;
+select regDividasID from registroDividas where vendaID_FK = 473;
+delete from registroDividas where regDividasID = 67;
+
+select count(*) from registroDividas;
+select * from vendas where tipoCompra = 'fiado';
+
+truncate table registroDividas;
+truncate table vendas;
+truncate table clientes;
+
+drop trigger atualizacaoRegistroFiadoTrigger;
+
 select * from vendas where nomeComprador like "%j%" and tipoCompra = "fiado";
 
 -- Triggers da table vendas
@@ -131,11 +145,12 @@ before update
 on vendas
 for each row
 begin
-	declare vendaid_fk int;
-    set vendaid_fk = new.vendaID;
+	declare regdividas_id int;
+    
+    select regDividasID into regdividas_id from registroDividas where vendaID_FK = new.vendaID;
     
     update registroDividas set valorDivida = new.vendaValor, dataDivida = new.vendaDataRegistro 
-    where vendaID_FK = vendaid_fk;
+    where regDividasID = regdividas_id;
 end;
 $$ delimiter ;
 
@@ -145,12 +160,15 @@ before delete
 on vendas
 for each row
 begin
-	declare vendaid_fk int;
-    set vendaid_fk = old.vendaID;
+    declare regdividas_id int;
     
-    delete from registroDividas where vendaID_FK = vendaid_fk;
+    select regDividasID into regdividas_id from registroDividas where vendaID_FK = old.vendaID;
+    
+    delete from registroDividas where regDividasID = regdividas_id;
 end;
 $$ delimiter ;
+
+drop trigger exclusaoRegistroFiadoTrigger;
 
 -- Triggers da table registroDividas
 
@@ -169,7 +187,7 @@ $$ delimiter ;
 
 delimiter $$
 create trigger alteracaoRegistroDividaTrigger
-before update 
+after update 
 on registroDividas
 for each row
 begin
@@ -218,17 +236,13 @@ begin
     select clienteDivida into cliente_divida from clientes where clienteID = cliente_id;
     set cliente_divida = cliente_divida - new.valorPagamento;
     
-    if cliente_divida >= 0 then
-		update clientes set clienteDivida = cliente_divida where clienteID = cliente_id;
-	else
-		update clientes set clienteDivida = 0 where clienteID = cliente_id;
-	end if;
+	update clientes set clienteDivida = cliente_divida where clienteID = cliente_id;
 end;
 $$ delimiter ;
 
 delimiter $$
 create trigger alteracaoPagamentoDividaTrigger
-before update 
+after update 
 on pagamentoDividas
 for each row
 begin
@@ -241,11 +255,8 @@ begin
     set cliente_divida = cliente_divida + old.valorPagamento;
     set cliente_divida = cliente_divida - new.valorPagamento;
     
-    if cliente_divida >= 0 then
-		update clientes set clienteDivida = cliente_divida where clienteID = cliente_id;
-	else
-		update clientes set clienteDivida = 0 where clienteID = cliente_id;
-	end if;
+	update clientes set clienteDivida = cliente_divida where clienteID = cliente_id;
+
 end;
 $$ delimiter ;
 
@@ -262,5 +273,21 @@ begin
     select clienteDivida into cliente_divida from clientes where clienteID = clienteid_fk;
     
     update clientes set clienteDivida = cliente_divida + old.valorPagamento where clienteID = clienteid_fk;
+end;
+$$ delimiter ;
+
+-- Triggers da table clientes
+
+delimiter $$
+create trigger exclusaoClienteTrigger
+before delete
+on clientes
+for each row
+begin
+	declare redividas_id int;
+
+    select regDividasID into redividas_id from registroDividas where clienteID_FK = old.clienteID;
+    
+    delete from registroDividas where regDividasID = redividas_id;
 end;
 $$ delimiter ;
