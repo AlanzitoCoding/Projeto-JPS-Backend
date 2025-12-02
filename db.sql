@@ -140,17 +140,39 @@ end;
 $$ delimiter ;
 
 delimiter $$
+drop trigger if exists atualizacaoRegistroFiadoTrigger;
 create trigger atualizacaoRegistroFiadoTrigger
 before update
 on vendas
 for each row
 begin
 	declare regdividas_id int;
-    
+    declare cliente_id int;
     select regDividasID into regdividas_id from registroDividas where vendaID_FK = new.vendaID;
     
-    update registroDividas set valorDivida = new.vendaValor, dataDivida = new.vendaDataRegistro 
-    where regDividasID = regdividas_id;
+	if new.tipoCompra = 'fiado' then
+		if new.nomeComprador = old.nomeComprador then
+			update registroDividas 
+            set valorDivida = new.vendaValor, dataDivida = new.vendaDataRegistro 
+			where regDividasID = regdividas_id;
+		else
+			delete from registroDividas where regDividasID = regdividas_id;
+            
+            select clienteID into cliente_id from clientes where clienteNome = new.nomeComprador;
+			
+			if cliente_id is not null then
+				insert into registroDividas(valorDivida, dataDivida, clienteID_FK, vendaID_FK) 
+				values (new.vendaValor, new.vendaDataRegistro, cliente_id, new.vendaID);
+			else
+				insert into clientes (clienteNome, clienteDivida) values (new.nomeComprador, 0);
+				select clienteID into cliente_id from clientes where clienteNome = new.nomeComprador;
+				insert into registroDividas(valorDivida, dataDivida, clienteID_FK, vendaID_FK) 
+				values (new.vendaValor, new.vendaDataRegistro, cliente_id, new.vendaID);
+			end if;
+        end if;
+	else
+		delete from registroDividas where regDividasID = regdividas_id;
+	end if;
 end;
 $$ delimiter ;
 
@@ -167,8 +189,6 @@ begin
     delete from registroDividas where regDividasID = regdividas_id;
 end;
 $$ delimiter ;
-
-drop trigger exclusaoRegistroFiadoTrigger;
 
 -- Triggers da table registroDividas
 
