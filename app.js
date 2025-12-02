@@ -10,7 +10,7 @@ const port = 8081;
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: '',
+    password: 'cimatec',
     database: 'projetoJPS_DB',
 });
 
@@ -132,7 +132,7 @@ app.post('/addNewVenda', (req, res) => {
 });
 
 app.get('/showVendas', (req, res) => {
-    query = 'select * from vendas where tipoCompra != "fiado" order by vendaDataRegistro desc';
+    query = 'select * from vendas where tipoCompra != "divida" order by vendaDataRegistro desc';
 
     db.query(query, (err, results) => {
         if(err){
@@ -144,7 +144,7 @@ app.get('/showVendas', (req, res) => {
 });
 
 app.get('/showDividas', (req, res) => {
-    query = 'select * from vendas where tipoCompra = "fiado" order by vendaDataRegistro desc';
+    query = 'select * from vendas where tipoCompra = "divida" order by vendaDataRegistro desc';
 
     db.query(query, (err, results) => {
         if(err){
@@ -237,6 +237,18 @@ app.get('/showClientePagamentoDividas/:clienteID_FK', (req, res) => {
         }
 
         res.status(200).json({ pagamentoDividas: results });
+    });
+});
+
+app.get('/showMaioresDividas', (req, res) => {
+    query = 'select * from clientes order by clienteDivida desc limit 3';
+
+    db.query(query, (err, results) => {
+        if(err){
+            throw new Error(`Erro na consulta: ${err}`);
+        }
+
+        res.status(200).json({ clientes: results });
     });
 });
 
