@@ -1,5 +1,6 @@
 -- Louvado seja o Senhor
 
+drop database projetoJPS_DB;
 create database projetoJPS_DB;
 use projetoJPS_DB;
 
@@ -85,12 +86,6 @@ INSERT INTO vendas (vendaDataRegistro, vendaValor, nomeComprador, tipoCompra) VA
 ('2025-01-24', 65.30, 'Cliente Desconhecido', 'divida'),
 (CurDate(), 100, "Jonah", "divida");
 
-insert into vendas(vendaDataRegistro, vendaValor, nomeComprador, tipoCompra) values (CurDate(), 150, "Jonah", "divida");
-
-insert into pagamentoDividas(valorPagamento, dataPagamento, clienteID_FK) values (100, curdate(), 1);
-
-update pagamentoDividas set valorPagamento = 50 where clienteID_FK = 1 and pagDividasID = 2;
-
 select * from produtos;
 select * from registroDividas;
 select * from clientes;
@@ -99,24 +94,8 @@ select * from vendas where nomeComprador = "Empresa XPTO";
 select count(vendaValor), sum(vendaValor) from vendas where tipoCompra = 'dinheiro';
 
 delete from vendas where vendaID > 0;
+delete from registroDividas where clienteID_FK = 6 and regDividasID > 0;
 delete from clientes where clienteID > 0;
-select regDividasID from registroDividas where vendaID_FK = 473;
-delete from registroDividas where regDividasID = 67;
-
-select count(*) from registroDividas;
-select * from vendas where tipoCompra = 'divida';
-
-truncate table registroDividas;
-truncate table vendas;
-truncate table clientes;
-
-delete from clientes where clienteID > 0;
-
-drop trigger atualizacaoRegistroFiadoTrigger;
-
-select * from vendas where nomeComprador like "%j%" and tipoCompra = "fiado";
-
-select * from clientes order by clienteDivida desc limit 3;
 
 -- Triggers da table vendas
 
@@ -307,10 +286,6 @@ before delete
 on clientes
 for each row
 begin
-	declare redividas_id int;
-
-    select regDividasID into redividas_id from registroDividas where clienteID_FK = old.clienteID;
-    
-    delete from registroDividas where regDividasID = redividas_id;
+    delete from registroDividas where regDividasID > 0 and clienteID_FK = old.clienteID;
 end;
 $$ delimiter ;
