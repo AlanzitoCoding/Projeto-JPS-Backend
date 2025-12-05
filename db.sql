@@ -1,6 +1,5 @@
 -- Louvado seja o Senhor
 
-drop database projetoJPS_DB;
 create database projetoJPS_DB;
 use projetoJPS_DB;
 
@@ -13,7 +12,6 @@ create table usuarios(
 );
 
 insert into usuarios(userNome, userSenha, userTipo) values ("JPSAdmin", "Jps290271@", "admin");
-select * from usuarios where userNome = "JPSAdmin" and userSenha = "Jps290271@" limit 1;
 
 create table produtos(
 	prodID int not null auto_increment,
@@ -61,8 +59,6 @@ create table pagamentoDividas(
     Foreign Key(clienteID_FK) references clientes(clienteID)
 );
 
-select * from vendas where tipoCompra = 'divida';
-
 INSERT INTO vendas (vendaDataRegistro, vendaValor, nomeComprador, tipoCompra) VALUES
 ('2025-01-05', 150.75, 'Carlos Almeida', 'credito'),
 ('2025-01-06', 89.90, 'Mariana Souza', 'debito'),
@@ -85,17 +81,6 @@ INSERT INTO vendas (vendaDataRegistro, vendaValor, nomeComprador, tipoCompra) VA
 ('2025-01-23', 1500.00, 'Empresa XPTO', 'pix'),
 ('2025-01-24', 65.30, 'Cliente Desconhecido', 'divida'),
 (CurDate(), 100, "Jonah", "divida");
-
-select * from produtos;
-select * from registroDividas;
-select * from clientes;
-select * from pagamentoDividas;
-select * from vendas where nomeComprador = "Empresa XPTO";
-select count(vendaValor), sum(vendaValor) from vendas where tipoCompra = 'dinheiro';
-
-delete from vendas where vendaID > 0;
-delete from registroDividas where clienteID_FK = 6 and regDividasID > 0;
-delete from clientes where clienteID > 0;
 
 -- Triggers da table vendas
 
